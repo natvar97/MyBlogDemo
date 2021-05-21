@@ -16,10 +16,9 @@ import android.provider.Settings
 import android.text.TextUtils
 import android.view.View
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
-import androidx.palette.graphics.Palette
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
@@ -29,7 +28,10 @@ import com.example.appdemoroomdatabase_coroutine_mvvm_livedata.R
 import com.example.appdemoroomdatabase_coroutine_mvvm_livedata.databinding.ActivityAddNewBlogBinding
 import com.example.appdemoroomdatabase_coroutine_mvvm_livedata.databinding.DialogCustomImageSelectionBinding
 import com.example.appdemoroomdatabase_coroutine_mvvm_livedata.entity.Blog
+import com.example.appdemoroomdatabase_coroutine_mvvm_livedata.utils.BlogApplication
+import com.example.appdemoroomdatabase_coroutine_mvvm_livedata.utils.Constants
 import com.example.appdemoroomdatabase_coroutine_mvvm_livedata.viewmodel.BlogViewModel
+import com.example.appdemoroomdatabase_coroutine_mvvm_livedata.viewmodel.BlogViewModelFactory
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
@@ -45,9 +47,12 @@ import java.util.*
 
 class AddNewBlog : AppCompatActivity(), View.OnClickListener {
 
-    private lateinit var blogViewModel: BlogViewModel
+    private val blogViewModel: BlogViewModel by viewModels {
+        BlogViewModelFactory((application as BlogApplication).repository)
+    }
     private lateinit var mBinding: ActivityAddNewBlogBinding
     private var mImagePath: String = ""
+    private var mEditBlogDetails: Blog? = null
 
     companion object {
         private const val CAMERA = 1
@@ -61,6 +66,23 @@ class AddNewBlog : AppCompatActivity(), View.OnClickListener {
 
         mBinding = ActivityAddNewBlogBinding.inflate(layoutInflater)
         setContentView(mBinding.root)
+
+        if (intent.hasExtra(Constants.EXTRA_BLOG_DETAILS)) {
+            mEditBlogDetails = intent.getParcelableExtra(Constants.EXTRA_BLOG_DETAILS)!!
+        }
+
+        mEditBlogDetails?.let {
+            if (it.id != 0) {
+                mImagePath = it.image
+                Glide.with(this)
+                    .load(mImagePath)
+                    .centerCrop()
+                    .into(mBinding.ivBlogImage)
+                mBinding.etTitle.setText(it.title)
+                mBinding.etAuthor.setText(it.author)
+                mBinding.etDescription.setText(it.description)
+            }
+        }
 
         mBinding.ivAddBlogImage.setOnClickListener(this)
         mBinding.btnPublishBlog.setOnClickListener(this)
@@ -85,12 +107,27 @@ class AddNewBlog : AppCompatActivity(), View.OnClickListener {
                             Toast.LENGTH_SHORT
                         ).show()
                     } else {
+                        var blogId = 0
+
+                        mEditBlogDetails?.let {
+                            blogId = it.id
+                        }
+
                         val blog = Blog(
-                            ,
+                            mImagePath,
                             mBinding.etTitle.text.toString(),
                             mBinding.etAuthor.text.toString(),
-                            mBinding.etDescription.text.toString()
+                            mBinding.etDescription.text.toString(),
+                            blogId
                         )
+
+                        if (blogId == 0) {
+                            blogViewModel.insert(blog)
+                        } else {
+                            blogViewModel.update(blog)
+                        }
+                        startActivity(Intent(this@AddNewBlog, MainActivity::class.java))
+                        finish()
                     }
                 }
 
@@ -130,7 +167,9 @@ class AddNewBlog : AppCompatActivity(), View.OnClickListener {
                     showRationalDialogForPermission()
                 }
 
-            })
+            }).onSameThread()
+                .check()
+            dialog.dismiss()
         }
 
         binding.tvGallery.setOnClickListener {
@@ -164,6 +203,7 @@ class AddNewBlog : AppCompatActivity(), View.OnClickListener {
                 })
                 .onSameThread()
                 .check()
+            dialog.dismiss()
         }
         dialog.show()
 
@@ -188,6 +228,7 @@ class AddNewBlog : AppCompatActivity(), View.OnClickListener {
             .show()
     }
 
+    @Suppress("DEPRECATION")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == Activity.RESULT_OK) {
@@ -216,12 +257,12 @@ class AddNewBlog : AppCompatActivity(), View.OnClickListener {
                                     dataSource: DataSource?,
                                     isFirstResource: Boolean
                                 ): Boolean {
-                                    resource?.let {
-                                        Palette.from(resource.toBitmap()).generate() { palette ->
-                                            val intColor = palette?.vibrantSwatch?.rgb ?: 0
-                                            mBinding.addPublishBlog.setBackgroundColor(intColor)
-                                        }
-                                    }
+//                                    resource?.let {
+//                                        Palette.from(resource.toBitmap()).generate() { palette ->
+//                                            val intColor = palette?.vibrantSwatch?.rgb ?: 0
+//                                            mBinding.addPublishBlog.setBackgroundColor(intColor)
+//                                        }
+//                                    }
                                     return false
                                 }
                             })
@@ -238,6 +279,10 @@ class AddNewBlog : AppCompatActivity(), View.OnClickListener {
                         )
                     )
                 }
+            }
+
+            if (requestCode == GALLERY) {
+
             }
         }
     }

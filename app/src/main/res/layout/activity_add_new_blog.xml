@@ -35,7 +35,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:scaleType="fitXY"
-                    android:src="@drawable/ic_launcher_background" />
+                    android:background="@android:color/darker_gray"/>
 
                 <ImageView
                     android:id="@+id/iv_add_blog_image"
@@ -114,8 +114,8 @@
                     android:id="@+id/et_description"
                     android:layout_width="match_parent"
                     android:layout_height="@dimen/_200sdp"
-                    android:gravity="top"
-                    android:inputType="text"
+                    android:gravity="start"
+                    android:maxLines="100"
                     android:textColor="@color/black"
                     android:textSize="@dimen/_15sdp" />
             </com.google.android.material.textfield.TextInputLayout>

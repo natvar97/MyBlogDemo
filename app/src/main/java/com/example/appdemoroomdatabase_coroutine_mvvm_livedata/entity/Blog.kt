@@ -1,10 +1,13 @@
 package com.example.appdemoroomdatabase_coroutine_mvvm_livedata.entity
 
+import android.os.Parcelable
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.example.appdemoroomdatabase_coroutine_mvvm_livedata.utils.Constants
+import kotlinx.parcelize.Parcelize
 
+@Parcelize
 @Entity(tableName = Constants.DATABASE_TABLE_NAME)
 data class Blog(
     @ColumnInfo(name = "image")
@@ -21,4 +24,4 @@ data class Blog(
 
     @PrimaryKey(autoGenerate = true)
     var id: Int = 0
-)
+) : Parcelable
