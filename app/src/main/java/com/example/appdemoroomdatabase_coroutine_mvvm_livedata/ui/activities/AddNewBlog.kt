@@ -19,8 +19,11 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
+import androidx.palette.graphics.Palette
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
@@ -154,7 +157,7 @@ class AddNewBlog : AppCompatActivity(), View.OnClickListener {
                         if (report.areAllPermissionsGranted()) {
                             val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
                             @Suppress("DEPRECATION")
-                            startActivityForResult(intent, 1)
+                            startActivityForResult(intent, CAMERA)
                         }
 
                     }
@@ -257,12 +260,12 @@ class AddNewBlog : AppCompatActivity(), View.OnClickListener {
                                     dataSource: DataSource?,
                                     isFirstResource: Boolean
                                 ): Boolean {
-//                                    resource?.let {
-//                                        Palette.from(resource.toBitmap()).generate() { palette ->
-//                                            val intColor = palette?.vibrantSwatch?.rgb ?: 0
-//                                            mBinding.addPublishBlog.setBackgroundColor(intColor)
-//                                        }
-//                                    }
+                                    resource?.let {
+                                        Palette.from(resource.toBitmap()).generate() { palette ->
+                                            val intColor = palette?.vibrantSwatch?.rgb ?: 0
+                                            mBinding.addPublishBlog.setBackgroundColor(intColor)
+                                        }
+                                    }
                                     return false
                                 }
                             })
@@ -282,7 +285,49 @@ class AddNewBlog : AppCompatActivity(), View.OnClickListener {
             }
 
             if (requestCode == GALLERY) {
+                data?.let {
+                    val selectedUri = data.data
 
+                    Glide.with(this)
+                        .load(selectedUri)
+                        .centerCrop()
+                        .diskCacheStrategy(DiskCacheStrategy.ALL)
+                        .listener(object : RequestListener<Drawable> {
+                            override fun onLoadFailed(
+                                e: GlideException?,
+                                model: Any?,
+                                target: Target<Drawable>?,
+                                isFirstResource: Boolean
+                            ): Boolean {
+                                return false
+                            }
+
+                            override fun onResourceReady(
+                                resource: Drawable?,
+                                model: Any?,
+                                target: Target<Drawable>?,
+                                dataSource: DataSource?,
+                                isFirstResource: Boolean
+                            ): Boolean {
+                                resource?.let {
+                                    val bitmap : Bitmap = resource.toBitmap()
+                                    mImagePath = saveImageToExternalStorage(bitmap)
+
+                                    Palette.from(resource.toBitmap()).generate() { palette ->
+                                        val intColor = palette?.vibrantSwatch?.rgb ?: 0
+                                        mBinding.addPublishBlog.setBackgroundColor(intColor)
+                                    }
+                                }
+                                return false
+                            }
+                        })
+                        .into(mBinding.ivBlogImage)
+
+                    mBinding.ivAddBlogImage.setImageDrawable(
+                        ContextCompat.getDrawable(this , R.drawable.ic_vector_edit)
+                    )
+
+                }
             }
         }
     }
